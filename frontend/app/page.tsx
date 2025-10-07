@@ -62,12 +62,16 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-              <Button size="sm" className="bg-tracky-primary hover:bg-tracky-primary/90">
-                Get Started
-              </Button>
+              <a href="/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </a>
+              <a href="/get-started">
+                <Button size="sm" className="bg-tracky-primary hover:bg-tracky-primary/90">
+                  Get Started
+                </Button>
+              </a>
             </div>
           </div>
         </div>
