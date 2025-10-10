@@ -5,13 +5,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Roles } from '../../enums/roles.enum';
+import { RolesEnum } from '../../enums/roles.enum';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from 'src/decorators/roles.decorator';
 
 interface AuthUser {
-  roles?: Roles[];
+  role?: RolesEnum[];
 }
 
 interface CustomRequest extends Request {
@@ -24,17 +24,18 @@ export class RolesGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<Roles[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<RolesEnum[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     const request = context.switchToHttp().getRequest<CustomRequest>();
 
     if (!requiredRoles) return true;
     const user = request.user;
 
     if (!user) throw new ForbiddenException('Usuario No autorizado');
-    const hasRole = user?.roles?.some((role) => requiredRoles.includes(role));
+    const hasRole =
+      user?.role?.some((role) => requiredRoles.includes(role)) ?? false;
 
     if (!hasRole)
       throw new ForbiddenException(

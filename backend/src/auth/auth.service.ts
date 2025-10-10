@@ -4,7 +4,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Roles } from 'src/enums/roles.enum';
 import { CreateUserDto } from 'src/users/Dtos/createUser.dto';
 import { LoginDto } from 'src/users/Dtos/login.dto';
 import { UsersRepository } from 'src/users/users.repository';
@@ -40,13 +39,6 @@ export class AuthService {
       throw new UnauthorizedException(
         'Correo electronico o contraseña son inválidas',
       );
-    }
-    if (user.credential.role === Roles.ADMIN) {
-      if (loginDto.password !== user.credential.password) {
-        throw new UnauthorizedException(
-          'Correo electronico o contraseña son inválidas',
-        );
-      }
     }
 
     if (!(await bcrypt.compare(loginDto.password, user.credential.password))) {

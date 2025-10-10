@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { User } from './entities/users.entity';
 import { Credential } from './entities/credential.entity';
 import { AuthModule } from './auth/auth.module';
+import { CampaingModule } from './campaing/campaing.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuthModule } from './auth/auth.module';
       signOptions: { expiresIn: '1h' },
     }),
     AuthModule,
+    CampaingModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataLoaderUsers],

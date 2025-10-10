@@ -4,7 +4,8 @@ import { User } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { Credential } from './entities/credential.entity';
 import * as fs from 'fs';
-import { Roles } from './enums/roles.enum';
+import { RolesEnum } from './enums/roles.enum';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AppService {
@@ -69,9 +70,11 @@ export class DataLoaderUsers implements OnModuleInit {
               wallet: user.wallet,
             });
             const savedUser = await queryRunner.manager.save(newUser);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(user.password, salt);
             const newCredential = this.credentialRepository.create({
-              password: user.password,
-              role: user.role as Roles,
+              password: hashedPassword,
+              role: user.role as RolesEnum,
               user: savedUser,
             });
             await queryRunner.manager.save(newCredential);

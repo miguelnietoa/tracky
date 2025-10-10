@@ -52,4 +52,8 @@ export class UsersRepository {
   getUserInformationByIdRepository(id: string) {
     return this.usersRepository.findOne({ where: { id } });
   }
+
+  async getUserByIdRepository(createdUserId: string) {
+    return await this.usersRepository.findOne({ where: { id: createdUserId } });
+  }
 }

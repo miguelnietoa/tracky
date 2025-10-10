@@ -2,10 +2,13 @@ import {
   Column,
   Entity,
   JoinColumn,
+  ManyToMany,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Credential } from './credential.entity';
+import { Campaing } from './campaing.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -27,4 +30,10 @@ export class User {
   @OneToOne(() => Credential, (credential) => credential.user)
   @JoinColumn()
   credential: Credential;
+
+  @OneToMany(() => Campaing, (campaign) => campaign.creator)
+  createdCampaigns: Campaing[];
+
+  @ManyToMany(() => Campaing, (campaign) => campaign.participants)
+  campaigns: Campaing[];
 }

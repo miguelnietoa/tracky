@@ -32,7 +32,6 @@ export class AuthGuard implements CanActivate {
       // Verificar el token
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, { secret });
-      console.log(payload);
       // Convertir las fechas de timestamp a objetos Date
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       payload.exp = new Date(payload.exp * 1000);

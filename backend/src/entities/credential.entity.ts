@@ -1,4 +1,4 @@
-import { Roles } from 'src/enums/roles.enum';
+import { RolesEnum } from 'src/enums/roles.enum';
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './users.entity';
 
@@ -12,10 +12,10 @@ export class Credential {
 
   @Column({
     type: 'enum',
-    enum: Roles,
-    default: Roles.USER,
+    enum: RolesEnum,
+    default: RolesEnum.USER,
   })
-  role: Roles;
+  role: RolesEnum;
 
   @OneToOne(() => User, (user) => user.credential)
   user: User;
