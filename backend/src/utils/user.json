@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Admin",
+    "lastName": "User",
+    "email": "admin@example.com",
+    "wallet": "admin_wallet",
+    "password": "admin123",
+    "role": "admin"
+  }
+]
