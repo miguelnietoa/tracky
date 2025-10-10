@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { Roboto } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import Header from "@/components/Header"
 import "./globals.css"
 
 const inter = Inter({
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`font-sans ${inter.variable} ${roboto.variable}`}>
+        <Header />
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
       </body>

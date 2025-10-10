@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Leaf, Mail, Lock, Eye, EyeOff, User, Building2, Users } from "lucide-react"
+import { Leaf, Mail, Lock, Eye, User, Building2, Users } from "lucide-react"
 import Link from "next/link"
 
 export default function GetStartedPage() {

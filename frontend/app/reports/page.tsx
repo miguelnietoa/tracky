@@ -68,11 +68,11 @@ export default function ReportsPage() {
   ]
 
   const regionData = [
-    { name: "Brazil", value: 35, color: "#3B82F6" },
-    { name: "Mexico", value: 25, color: "#10B981" },
-    { name: "Argentina", value: 20, color: "#F59E0B" },
-    { name: "Colombia", value: 12, color: "#EF4444" },
-    { name: "Others", value: 8, color: "#8B5CF6" },
+    { name: "Brazil", value: 35, color: "#10b981" },
+    { name: "Mexico", value: 25, color: "#6366f1" },
+    { name: "Argentina", value: 20, color: "#f59e0b" },
+    { name: "Colombia", value: 12, color: "#ef4444" },
+    { name: "Others", value: 8, color: "#8b5cf6" },
   ]
 
   const translations = {
@@ -145,25 +145,25 @@ export default function ReportsPage() {
   const t = translations[selectedLanguage as keyof typeof translations]
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with Language Selector */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-2 text-foreground">
               {t.title}
             </h1>
-            <p className="text-gray-400 text-lg">{t.subtitle}</p>
+            <p className="text-muted-foreground text-lg">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-4">
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800">
+              <SelectTrigger className="w-40">
                 <Globe className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-800">
+              <SelectContent>
                 {languages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code} className="text-white">
+                  <SelectItem key={lang.code} value={lang.code}>
                     <span className="mr-2">{lang.flag}</span>
                     {lang.name}
                   </SelectItem>
@@ -178,18 +178,18 @@ export default function ReportsPage() {
           {reportMetrics.map((metric, index) => {
             const Icon = metric.icon
             return (
-              <Card key={index} className="bg-gray-900/50 border-gray-800">
+              <Card key={index} className="border-border/50 bg-card/50 backdrop-blur">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400 mb-1">
+                      <p className="text-sm text-muted-foreground mb-1">
                         {t[metric.label.toLowerCase().replace(/\s+/g, "") as keyof typeof t] || metric.label}
                       </p>
-                      <p className="text-2xl font-bold text-white">{metric.value}</p>
-                      <p className="text-sm text-green-400">{metric.change}</p>
+                      <p className="text-2xl font-bold text-foreground">{metric.value}</p>
+                      <p className="text-sm text-tracky-secondary">{metric.change}</p>
                     </div>
-                    <div className="p-3 bg-blue-500/20 rounded-lg">
-                      <Icon className="h-6 w-6 text-blue-400" />
+                    <div className="p-3 bg-tracky-primary/10 rounded-lg">
+                      <Icon className="h-6 w-6 text-tracky-primary" />
                     </div>
                   </div>
                 </CardContent>
@@ -200,26 +200,26 @@ export default function ReportsPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8">
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-tracky-primary hover:bg-tracky-primary/90 cursor-pointer">
             <FileText className="h-4 w-4 mr-2" />
             {t.generateReport}
           </Button>
-          <Button variant="outline" className="border-gray-800 text-gray-300 bg-transparent">
+          <Button variant="outline" className="cursor-pointer">
             <Download className="h-4 w-4 mr-2" />
             {t.exportData}
           </Button>
-          <Button variant="outline" className="border-gray-800 text-gray-300 bg-transparent">
+          <Button variant="outline" className="cursor-pointer">
             <Share className="h-4 w-4 mr-2" />
             {t.shareReport}
           </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="border-gray-800 text-gray-300 bg-transparent">
+              <Button variant="outline" className="cursor-pointer">
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 {format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-800" align="start">
+            <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 initialFocus
                 mode="range"
@@ -227,14 +227,13 @@ export default function ReportsPage() {
                 selected={dateRange}
                 onSelect={(range) => range && setDateRange(range as { from: Date; to: Date })}
                 numberOfMonths={2}
-                className="text-white"
               />
             </PopoverContent>
           </Popover>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-gray-900/50 border-gray-800">
+          <TabsList className="bg-muted/50">
             <TabsTrigger value="overview">{t.overview}</TabsTrigger>
             <TabsTrigger value="campaigns">{t.campaigns}</TabsTrigger>
             <TabsTrigger value="environmental">{t.environmental}</TabsTrigger>
@@ -244,38 +243,38 @@ export default function ReportsPage() {
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Impact Trends */}
-              <Card className="bg-gray-900/50 border-gray-800">
+              <Card className="border-border/50 bg-card/50 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                    <TrendingUp className="h-5 w-5 text-tracky-primary" />
                     Impact Trends
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={impactData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1F2937",
-                          border: "1px solid #374151",
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                         }}
                       />
-                      <Line type="monotone" dataKey="impact" stroke="#3B82F6" strokeWidth={2} />
-                      <Line type="monotone" dataKey="volunteers" stroke="#10B981" strokeWidth={2} />
+                      <Line type="monotone" dataKey="impact" stroke="#10b981" strokeWidth={2} />
+                      <Line type="monotone" dataKey="volunteers" stroke="#6366f1" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
               {/* Regional Distribution */}
-              <Card className="bg-gray-900/50 border-gray-800">
+              <Card className="border-border/50 bg-card/50 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-green-400" />
+                    <Globe className="h-5 w-5 text-tracky-secondary" />
                     Regional Distribution
                   </CardTitle>
                 </CardHeader>
@@ -298,8 +297,8 @@ export default function ReportsPage() {
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1F2937",
-                          border: "1px solid #374151",
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                         }}
                       />
@@ -310,7 +309,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Campaign Performance */}
-            <Card className="bg-gray-900/50 border-gray-800">
+            <Card className="border-border/50 bg-card/50 backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-purple-400" />
@@ -320,18 +319,18 @@ export default function ReportsPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={impactData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="month" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#1F2937",
-                        border: "1px solid #374151",
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: "8px",
                       }}
                     />
-                    <Bar dataKey="campaigns" fill="#3B82F6" />
-                    <Bar dataKey="volunteers" fill="#10B981" />
+                    <Bar dataKey="campaigns" fill="#6366f1" />
+                    <Bar dataKey="volunteers" fill="#10b981" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -348,16 +347,16 @@ export default function ReportsPage() {
                 { name: "Waste Reduction", status: "Active", progress: 67, volunteers: 178 },
                 { name: "Clean Water", status: "Planning", progress: 12, volunteers: 89 },
               ].map((campaign, index) => (
-                <Card key={index} className="bg-gray-900/50 border-gray-800">
+                <Card key={index} className="border-border/50 bg-card/50 backdrop-blur">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{campaign.name}</CardTitle>
                       <Badge
                         className={
                           campaign.status === "Active"
-                            ? "bg-green-500/20 text-green-400 border-green-500/30"
+                            ? "bg-tracky-secondary/20 text-tracky-secondary border-tracky-secondary/30"
                             : campaign.status === "Completed"
-                              ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                              ? "bg-tracky-primary/20 text-tracky-primary border-tracky-primary/30"
                               : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
                         }
                       >
@@ -368,22 +367,22 @@ export default function ReportsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Progress</span>
-                        <span className="text-gray-300">{campaign.progress}%</span>
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-foreground">{campaign.progress}%</span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-2">
                         <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-tracky-primary h-2 rounded-full transition-all duration-300"
                           style={{ width: `${campaign.progress}%` }}
                         />
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-300">{campaign.volunteers} volunteers</span>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{campaign.volunteers} volunteers</span>
                       </div>
-                      <Button size="sm" variant="outline" className="border-gray-700 text-gray-300 bg-transparent">
+                      <Button size="sm" variant="outline" className="cursor-pointer">
                         <Eye className="h-4 w-4 mr-1" />
                         {t.viewDetails}
                       </Button>
@@ -397,16 +396,16 @@ export default function ReportsPage() {
           <TabsContent value="environmental" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: "CO₂ Reduced", value: "2.4M kg", icon: "🌱", color: "text-green-400" },
-                { label: "Trees Planted", value: "15,432", icon: "🌳", color: "text-green-400" },
-                { label: "Waste Recycled", value: "890 tons", icon: "♻️", color: "text-blue-400" },
-                { label: "Water Saved", value: "1.2M L", icon: "💧", color: "text-blue-400" },
+                { label: "CO₂ Reduced", value: "2.4M kg", icon: "🌱", color: "text-tracky-secondary" },
+                { label: "Trees Planted", value: "15,432", icon: "🌳", color: "text-tracky-secondary" },
+                { label: "Waste Recycled", value: "890 tons", icon: "♻️", color: "text-tracky-primary" },
+                { label: "Water Saved", value: "1.2M L", icon: "💧", color: "text-tracky-primary" },
               ].map((metric, index) => (
-                <Card key={index} className="bg-gray-900/50 border-gray-800">
+                <Card key={index} className="border-border/50 bg-card/50 backdrop-blur">
                   <CardContent className="p-6 text-center">
                     <div className="text-4xl mb-2">{metric.icon}</div>
                     <p className={`text-2xl font-bold ${metric.color} mb-1`}>{metric.value}</p>
-                    <p className="text-sm text-gray-400">{metric.label}</p>
+                    <p className="text-sm text-muted-foreground">{metric.label}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -415,7 +414,7 @@ export default function ReportsPage() {
 
           <TabsContent value="community" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-gray-900/50 border-gray-800">
+              <Card className="border-border/50 bg-card/50 backdrop-blur">
                 <CardHeader>
                   <CardTitle>Top Contributors</CardTitle>
                 </CardHeader>
@@ -427,17 +426,17 @@ export default function ReportsPage() {
                     { name: "Luis Martinez", contributions: 28, tokens: 1420 },
                     { name: "Sofia Lopez", contributions: 25, tokens: 1290 },
                   ].map((contributor, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-green-400 rounded-full flex items-center justify-center text-sm font-bold">
+                        <div className="w-8 h-8 bg-gradient-to-r from-tracky-primary to-tracky-secondary rounded-full flex items-center justify-center text-sm font-bold">
                           {index + 1}
                         </div>
                         <div>
-                          <p className="font-medium text-white">{contributor.name}</p>
-                          <p className="text-sm text-gray-400">{contributor.contributions} contributions</p>
+                          <p className="font-medium text-foreground">{contributor.name}</p>
+                          <p className="text-sm text-muted-foreground">{contributor.contributions} contributions</p>
                         </div>
                       </div>
-                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                      <Badge className="bg-tracky-primary/20 text-tracky-primary border-tracky-primary/30">
                         {contributor.tokens} tokens
                       </Badge>
                     </div>
@@ -445,24 +444,24 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900/50 border-gray-800">
+              <Card className="border-border/50 bg-card/50 backdrop-blur">
                 <CardHeader>
                   <CardTitle>Community Growth</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={impactData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1F2937",
-                          border: "1px solid #374151",
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                         }}
                       />
-                      <Line type="monotone" dataKey="volunteers" stroke="#10B981" strokeWidth={3} />
+                      <Line type="monotone" dataKey="volunteers" stroke="#10b981" strokeWidth={3} />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
