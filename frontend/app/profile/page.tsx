@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import {
-  Leaf,
   Award,
   Trophy,
   Star,
@@ -24,6 +23,7 @@ import {
   Share2,
   Download,
   CheckCircle,
+  Leaf,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -231,53 +231,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                  <Leaf className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold text-foreground">Tracky</span>
-              </Link>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link
-                href="/campaigns"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Campaigns
-              </Link>
-              <Link
-                href="/tracking"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Tracking
-              </Link>
-              <Link
-                href="/community"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Community
-              </Link>
-              <Link href="/profile" className="text-sm font-medium text-tracky-primary">
-                Profile
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-              <Button size="sm" className="bg-tracky-primary hover:bg-tracky-primary/90">
-                Get Started
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
         <div className="mb-8">
