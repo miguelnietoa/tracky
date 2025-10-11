@@ -3,7 +3,7 @@
     "name": "Admin",
     "lastName": "User",
     "email": "admin@example.com",
-    "wallet": "12sPNvGgQXznTvJtLoxBkgM8ChYbC6j8pRT7XoHgfci2XUvu",
+    "wallet": "0x8AD8CD2CBc73355Cc4fDF7ee3F172Ddb2B008ce1",
     "password": "Password123*",
     "role": "admin"
   }

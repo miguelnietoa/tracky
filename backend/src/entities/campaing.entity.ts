@@ -73,4 +73,10 @@ export class Campaing {
 
   @ManyToOne(() => User, (user) => user.createdCampaigns, { eager: true })
   creator: User;
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  onchainTxHash?: string;
+
+  @Column({ type: 'varchar', length: 78, nullable: true })
+  onchainCampaignId?: string;
 }

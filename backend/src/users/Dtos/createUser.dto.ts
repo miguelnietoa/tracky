@@ -7,6 +7,7 @@ import {
   MaxLength,
   MinLength,
   Validate,
+  IsEthereumAddress,
 } from 'class-validator';
 import { MatchPassword } from 'src/decorators/matchPassword.decorator';
 
@@ -78,17 +79,15 @@ export class CreateUserDto {
   email: string;
 
   @ApiProperty({
-    description: 'Dirección de wallet válida de la red Polkadot (formato SS58)',
-    example: '12sPNvGgQXznTvJtLoxBkgM8ChYbC5j8pRT7XoHgfci2XUvu',
+    description:
+      'Dirección de wallet válida de la red Ethereum (formato 0x + 40 hex)',
+    example: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
   })
-  @IsString()
-  @Matches(
-    /^1[1-9A-HJ-NP-Za-km-z]{46,49}$|^1[1-9A-HJ-NP-Za-km-z]{47,48}$|^12[1-9A-HJ-NP-Za-km-z]{45,48}$/,
-    {
-      message:
-        'La wallet no cumple con el formato de una dirección válida de Polkadot',
-    },
-  )
+  @IsString({ message: 'La wallet debe ser una cadena de texto' })
+  @IsEthereumAddress({
+    message:
+      'La wallet no cumple con el formato de una dirección válida de Ethereum',
+  })
   wallet: string;
 
   @ApiProperty({
