@@ -5,18 +5,11 @@ import { CreateCampaingDto } from './Dtos/createCampaing.dto';
 import { User } from 'src/entities/users.entity';
 import { ApproveCampaingDto } from './Dtos/approveCampaing.dto';
 import { CampaingStatus } from 'src/enums/campaing.enum';
-import {
-  Contract,
-  Interface,
-  JsonRpcProvider,
-  Wallet,
-  parseUnits,
-} from 'ethers';
+import { Contract, JsonRpcProvider, Wallet, parseUnits } from 'ethers';
 
 // ABI mínimo de CampaignManager para crear campaña
 const CAMPAIGN_MANAGER_ABI = [
   'function createCampaign(string,string,uint256,uint256,address,string[],address[],uint256) external returns (uint256)',
-  'event CampaignCreated(uint256 indexed id, string name, address indexed creator)',
 ];
 
 export class CampaingRepository {
@@ -121,21 +114,9 @@ export class CampaingRepository {
     // Interpretamos c.token como cantidad de TRK con 18 decimales
     const rewardAmountWei: bigint = parseUnits(String(c.token || 0), 18);
 
-    console.log('[onchain] Preparando createCampaign...', {
-      name,
-      participants: participantWallets.length,
-      startAtSec: startAtSec.toString(),
-      endAtSec: endAtSec.toString(),
-      creator: creatorAddress,
-      rewardAmountWei: rewardAmountWei.toString(),
-    });
-
-    const tx: {
-      hash?: string;
-      wait: (
-        conf?: number,
-      ) => Promise<{ logs: Array<{ topics: string[]; data: string }> }>;
-    } = await (contract as any).createCampaign(
+    const tx: { wait: (conf?: number) => Promise<unknown> } = await (
+      contract as any
+    ).createCampaign(
       name,
       description,
       startAtSec,
@@ -145,47 +126,7 @@ export class CampaingRepository {
       participantWallets,
       rewardAmountWei,
     );
-    console.log('[onchain] Tx enviada:', tx.hash);
-    const receipt = await tx.wait(1);
-    const txHash = (tx as any).hash as string | undefined;
-    console.log('[onchain] Receipt recibido. logs:', receipt.logs?.length ?? 0);
-
-    // Parsear logs para obtener campaignId del evento CampaignCreated
-    let onchainId: string | undefined;
-    try {
-      const iface = new Interface(CAMPAIGN_MANAGER_ABI);
-      for (const log of receipt.logs) {
-        try {
-          const parsed = iface.parseLog(log);
-          if (parsed?.name === 'CampaignCreated') {
-            const id = parsed.args?.[0]?.toString?.();
-            if (id) onchainId = id;
-            console.log('[onchain] CampaignCreated id:', onchainId);
-            break;
-          }
-        } catch {
-          // ignorar logs que no matchean
-        }
-      }
-    } catch {
-      // si falla el parseo, no rompemos el flujo
-    }
-
-    // Persistimos referencias en BD (mejor esfuerzo)
-    try {
-      await this.campaingRepository.update(
-        { id: c.id },
-        { onchainTxHash: txHash, onchainCampaignId: onchainId },
-      );
-      console.log('[onchain] Referencias guardadas en DB:', {
-        id: c.id,
-        txHash,
-        onchainId,
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error('No se pudo guardar referencias on-chain en DB:', msg);
-    }
+    await tx.wait();
     /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   }
 }
