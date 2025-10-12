@@ -14,6 +14,11 @@ export interface LoginDto {
 }
 
 // Frontend form types
+export interface LoginFormData {
+  email: string
+  password: string
+  rememberMe: boolean
+}
 export interface IndividualFormData {
   firstName: string
   lastName: string
@@ -61,7 +66,7 @@ export interface CreateUserResponse {
 
 export interface LoginResponse {
   access_token: string
-  user: {
+  user?: {
     id: string
     name: string
     lastName: string

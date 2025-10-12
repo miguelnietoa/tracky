@@ -1,12 +1,107 @@
+'use client'
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Mail, Lock, Eye, Leaf } from "lucide-react"
+import { Mail, Lock, Eye, Leaf, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { AuthService } from "@/lib/auth"
+import { AuthManager } from "@/lib/auth-manager"
+import { LoginFormData, FormErrors } from "@/lib/types"
+import { validateEmail, validateLoginPassword } from "@/lib/validation"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+
+  const [loginForm, setLoginForm] = useState<LoginFormData>({
+    email: '',
+    password: '',
+    rememberMe: false
+  })
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(prev => !prev)
+  }
+
+  const validateForm = (): FormErrors => {
+    const formErrors: FormErrors = {}
+
+    const emailError = validateEmail(loginForm.email)
+    if (emailError) formErrors.email = emailError
+
+    const passwordError = validateLoginPassword(loginForm.password)
+    if (passwordError) formErrors.password = passwordError
+
+    return formErrors
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validate form
+    const formErrors = validateForm()
+    setErrors(formErrors)
+
+    if (Object.keys(formErrors).length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fix the errors in the form"
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const loginData = {
+        email: loginForm.email,
+        password: loginForm.password
+      }
+
+      const response = await AuthService.loginUser(loginData)
+      console.log('Login response:', response)
+
+      if (response.error) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: response.error.message || "Invalid email or password"
+        })
+      } else if (response.data) {
+        // Store the token and user data using AuthManager
+        AuthManager.setAuth(response.data, loginForm.rememberMe)
+
+        toast({
+          title: "Login Successful",
+          description: response.data.user ? `Welcome back, ${response.data.user.name}!` : "Login successful!"
+        })
+
+        // Redirect to dashboard or home page after successful login
+        setTimeout(() => {
+          router.push('/tracking') // or wherever you want to redirect after login
+        }, 1500)
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "An unexpected error occurred. Please try again."
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -26,63 +121,85 @@ export default function LoginPage() {
               Sign in to your account to continue tracking environmental impact
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="pl-10"
-                />
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                  />
+                </div>
+                {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  className="pl-10 pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={togglePasswordVisibility}
+                  >
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+                {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    className="h-4 w-4 rounded border-gray-300"
+                    checked={loginForm.rememberMe}
+                    onChange={(e) => setLoginForm({...loginForm, rememberMe: e.target.checked})}
+                  />
+                  <Label htmlFor="remember" className="text-sm text-muted-foreground">
+                    Remember me
+                  </Label>
+                </div>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-tracky-primary hover:underline"
                 >
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                  Forgot password?
+                </Link>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="remember" className="text-sm text-muted-foreground">
-                  Remember me
-                </Label>
-              </div>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-tracky-primary hover:underline"
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-tracky-primary hover:bg-tracky-primary/90"
               >
-                Forgot password?
-              </Link>
-            </div>
-
-            <Button className="w-full bg-tracky-primary hover:bg-tracky-primary/90">
-              Sign In
-            </Button>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -150,6 +267,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+      <Toaster />
     </div>
   )
 }

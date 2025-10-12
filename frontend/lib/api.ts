@@ -1,3 +1,5 @@
+import { AuthManager } from './auth-manager'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'
 
 export interface ApiError {
@@ -28,6 +30,7 @@ class ApiClient {
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
+          ...AuthManager.getAuthHeader(),
           ...options.headers,
         },
         ...options,
@@ -37,6 +40,12 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+
+        // If unauthorized, clear auth data
+        if (response.status === 401) {
+          AuthManager.clearAuth()
+        }
+
         return {
           error: {
             message: errorData.message || 'An error occurred',

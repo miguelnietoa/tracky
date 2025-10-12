@@ -46,3 +46,8 @@ export const validateRequiredField = (value: string, fieldName: string): string 
   if (!value || value.trim() === '') return `${fieldName} is required`
   return undefined
 }
+
+export const validateLoginPassword = (password: string): string | undefined => {
+  if (!password) return 'Password is required'
+  return undefined
+}
