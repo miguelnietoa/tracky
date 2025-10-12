@@ -1,3 +1,7 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,66 +24,102 @@ import {
   Shield,
   Award,
   Clock,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
-
-// Mock data for campaign details
-const campaign = {
-  id: 1,
-  title: "Beach Cleanup Initiative",
-  description:
-    "Join our community-driven beach cleanup initiative to remove plastic waste and restore marine ecosystems. This campaign focuses on cleaning Santa Monica Beach while educating participants about marine conservation and sustainable practices.",
-  longDescription:
-    "Our Beach Cleanup Initiative is more than just picking up trash – it's about creating lasting change in our coastal communities. We'll be working with local marine biologists to identify the most impactful areas for cleanup, documenting the types of waste we collect, and using this data to advocate for better waste management policies. Participants will learn about marine ecosystems, the impact of plastic pollution, and how individual actions can create collective change.",
-  location: "Santa Monica, CA",
-  startDate: "2025-02-15",
-  endDate: "2025-02-16",
-  participants: 45,
-  maxParticipants: 100,
-  goal: "Remove 500kg of plastic waste",
-  status: "active",
-  category: "cleanup",
-  organizer: {
-    name: "Maria Rodriguez",
-    avatar: "/placeholder.svg?height=40&width=40",
-    reputation: 4.8,
-    campaigns: 12,
-  },
-  metrics: [
-    { name: "Plastic Waste Removed", target: 500, current: 320, unit: "kg" },
-    { name: "Beach Area Cleaned", target: 2, current: 1.3, unit: "km" },
-    { name: "Volunteers Engaged", target: 100, current: 45, unit: "people" },
-  ],
-  impact: {
-    co2Saved: "2.3 tons",
-    wasteRemoved: "320 kg",
-    areaRestored: "1.3 km",
-  },
-  tokenReward: 150,
-  blockchain: {
-    contractAddress: "0x742d35Cc6634C0532925a3b8D4C0532925a3b8D4",
-    transactionCount: 127,
-    lastUpdate: "2025-01-15T10:30:00Z",
-  },
-  updates: [
-    {
-      id: 1,
-      date: "2025-01-14",
-      title: "Halfway to our goal!",
-      content: "Amazing progress team! We've removed 320kg of plastic waste so far.",
-      author: "Maria Rodriguez",
-    },
-    {
-      id: 2,
-      date: "2025-01-12",
-      title: "New volunteer training session",
-      content: "Join us this Saturday for a marine conservation workshop.",
-      author: "Maria Rodriguez",
-    },
-  ],
-}
+import { CampaignService } from "@/lib/campaign-service"
+import { Campaign } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function CampaignDetailsPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCampaign = async () => {
+      try {
+        setLoading(true)
+        const response = await CampaignService.getCampaignById(params.id)
+
+        if (response.error) {
+          setError(response.error.message)
+          toast({
+            variant: "destructive",
+            title: "Error Loading Campaign",
+            description: response.error.message
+          })
+        } else if (response.data) {
+          setCampaign(response.data)
+        }
+      } catch (error) {
+        setError('Failed to load campaign')
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load campaign details"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCampaign()
+  }, [params.id, toast])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading campaign details...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !campaign) {
+    return (
+      <div className="min-h-screen bg-background">
+        <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Link href="/" className="flex items-center space-x-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                    <Leaf className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <span className="text-xl font-bold text-foreground">Tracky</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/campaigns">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Campaigns
+              </Button>
+            </Link>
+          </div>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error || 'Campaign not found'}
+            </AlertDescription>
+          </Alert>
+        </div>
+        <Toaster />
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -149,11 +189,11 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Badge variant="default" className="bg-tracky-secondary text-white">
-                      {campaign.status}
+                      {campaign.campaignStatus}
                     </Badge>
-                    <Badge variant="outline">{campaign.category}</Badge>
+                    <Badge variant="outline">Environmental</Badge>
                   </div>
-                  <h1 className="text-4xl font-bold text-foreground">{campaign.title}</h1>
+                  <h1 className="text-4xl font-bold text-foreground">{campaign.name}</h1>
                   <p className="text-lg text-muted-foreground">{campaign.description}</p>
                 </div>
                 <div className="flex gap-2">
@@ -172,7 +212,7 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 mr-2" />
-                  {campaign.location}
+                  {campaign.city}, {campaign.country}
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-2" />
@@ -181,7 +221,7 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Users className="h-4 w-4 mr-2" />
-                  {campaign.participants}/{campaign.maxParticipants} participants
+                  {campaign.currentParticipants}/{campaign.totalParticipants} participants
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Target className="h-4 w-4 mr-2" />
@@ -205,7 +245,7 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
                     <CardTitle>About This Campaign</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">{campaign.longDescription}</p>
+                    <p className="text-muted-foreground leading-relaxed">{campaign.description}</p>
                   </CardContent>
                 </Card>
 
@@ -216,13 +256,13 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
                   <CardContent>
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={campaign.organizer.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>MR</AvatarFallback>
+                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarFallback>{campaign.creator.name.charAt(0)}{campaign.creator.lastName.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold">{campaign.organizer.name}</h3>
+                        <h3 className="font-semibold">{campaign.creator.name} {campaign.creator.lastName}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {campaign.organizer.campaigns} campaigns organized • {campaign.organizer.reputation}★ rating
+                          Campaign Creator • {campaign.creator.email}
                         </p>
                       </div>
                     </div>
@@ -233,44 +273,48 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
               <TabsContent value="progress" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Impact Metrics</CardTitle>
-                    <CardDescription>Real-time progress towards campaign goals</CardDescription>
+                    <CardTitle>Campaign Progress</CardTitle>
+                    <CardDescription>Track participation and campaign development</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {campaign.metrics.map((metric, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">{metric.name}</span>
-                          <span className="text-muted-foreground">
-                            {metric.current} / {metric.target} {metric.unit}
-                          </span>
-                        </div>
-                        <Progress value={(metric.current / metric.target) * 100} className="h-2" />
-                        <div className="text-xs text-muted-foreground">
-                          {Math.round((metric.current / metric.target) * 100)}% complete
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">Participation Progress</span>
+                        <span className="text-muted-foreground">
+                          {campaign.currentParticipants} / {campaign.totalParticipants} participants
+                        </span>
                       </div>
-                    ))}
+                      <Progress value={(campaign.currentParticipants / campaign.totalParticipants) * 100} className="h-2" />
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((campaign.currentParticipants / campaign.totalParticipants) * 100)}% of target reached
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Environmental Impact</CardTitle>
+                    <CardTitle>Campaign Details</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-tracky-secondary">{campaign.impact.co2Saved}</div>
-                        <div className="text-sm text-muted-foreground">CO2 Saved</div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-sm font-medium">Campaign Status</Label>
+                        <p className="text-sm text-muted-foreground capitalize">{campaign.campaignStatus}</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-tracky-primary">{campaign.impact.wasteRemoved}</div>
-                        <div className="text-sm text-muted-foreground">Waste Removed</div>
+                      <div>
+                        <Label className="text-sm font-medium">Token Reward</Label>
+                        <p className="text-sm text-muted-foreground">{campaign.token} tokens</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-tracky-secondary">{campaign.impact.areaRestored}</div>
-                        <div className="text-sm text-muted-foreground">Area Restored</div>
+                      <div>
+                        <Label className="text-sm font-medium">Created Date</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(campaign.createAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Location</Label>
+                        <p className="text-sm text-muted-foreground">{campaign.address}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -282,38 +326,29 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="h-5 w-5" />
-                      Blockchain Verification
+                      Blockchain Features
                     </CardTitle>
-                    <CardDescription>Transparent and immutable tracking of campaign activities</CardDescription>
+                    <CardDescription>Transparent and immutable tracking capabilities</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label className="text-sm font-medium">Contract Address</Label>
-                        <p className="text-sm text-muted-foreground font-mono">{campaign.blockchain.contractAddress}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Total Transactions</Label>
-                        <p className="text-sm text-muted-foreground">
-                          {campaign.blockchain.transactionCount} verified actions
-                        </p>
-                      </div>
-                    </div>
-                    <Separator />
                     <div className="space-y-3">
-                      <h4 className="font-medium">Recent Blockchain Activity</h4>
+                      <h4 className="font-medium">Available Features</h4>
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Volunteer registration verified</span>
-                          <span className="text-muted-foreground">2 hours ago</span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 bg-tracky-secondary rounded-full"></div>
+                          <span className="text-sm">Immutable impact tracking</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Impact metric updated</span>
-                          <span className="text-muted-foreground">4 hours ago</span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 bg-tracky-secondary rounded-full"></div>
+                          <span className="text-sm">Transparent resource allocation</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Token rewards distributed</span>
-                          <span className="text-muted-foreground">1 day ago</span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 bg-tracky-secondary rounded-full"></div>
+                          <span className="text-sm">Automated token rewards: {campaign.token} tokens</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 bg-tracky-secondary rounded-full"></div>
+                          <span className="text-sm">Verifiable impact certificates</span>
                         </div>
                       </div>
                     </div>
@@ -322,29 +357,28 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
               </TabsContent>
 
               <TabsContent value="updates" className="space-y-6">
-                {campaign.updates.map((update) => (
-                  <Card key={update.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{update.title}</CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {new Date(update.date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">{update.content}</p>
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/50">
-                        <span className="text-sm text-muted-foreground">By {update.author}</span>
-                        <Button variant="ghost" size="sm">
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          Comment
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Campaign Updates</CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      Created on {new Date(campaign.createAt).toLocaleDateString()}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Campaign "{campaign.name}" was successfully created and is currently {campaign.campaignStatus.toLowerCase()}.
+                      Join this initiative to contribute to environmental sustainability.
+                    </p>
+                    <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/50">
+                      <span className="text-sm text-muted-foreground">By {campaign.creator.name} {campaign.creator.lastName}</span>
+                      <Button variant="ghost" size="sm">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Contact Creator
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
@@ -358,14 +392,14 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-tracky-primary mb-2">{campaign.tokenReward}</div>
+                  <div className="text-3xl font-bold text-tracky-primary mb-2">{campaign.token}</div>
                   <div className="text-sm text-muted-foreground">tokens reward</div>
                 </div>
                 <Button className="w-full bg-tracky-primary hover:bg-tracky-primary/90 text-white">
                   Join Campaign
                 </Button>
                 <div className="text-xs text-center text-muted-foreground">
-                  {campaign.maxParticipants - campaign.participants} spots remaining
+                  {campaign.totalParticipants - campaign.currentParticipants} spots remaining
                 </div>
               </CardContent>
             </Card>
@@ -404,28 +438,32 @@ export default function CampaignDetailsPage({ params }: { params: { id: string }
             {/* Participants */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Recent Participants</CardTitle>
+                <CardTitle className="text-lg">Campaign Statistics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Avatar key={i} className="h-8 w-8 border-2 border-background">
-                      <AvatarImage src={`/placeholder-icon.png?height=32&width=32&text=${i}`} />
-                      <AvatarFallback>U{i}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted border-2 border-background text-xs font-medium">
-                    +{campaign.participants - 5}
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Current Participants:</span>
+                    <span className="font-medium">{campaign.currentParticipants}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Total Capacity:</span>
+                    <span className="font-medium">{campaign.totalParticipants}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Available Spots:</span>
+                    <span className="font-medium">{campaign.totalParticipants - campaign.currentParticipants}</span>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-3">
-                  {campaign.participants} volunteers making a difference
+                  Join {campaign.currentParticipants} other volunteers making a difference
                 </p>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+      <Toaster />
     </div>
   )
 }

@@ -20,6 +20,14 @@ export class CampaingService {
     return await this.campaingRepository.getAllCampaingsRepository();
   }
 
+  async getCampaingByIdService(id: string) {
+    const campaing = await this.campaingRepository.getCampaingById(id);
+    if (!campaing) {
+      throw new NotFoundException('Campaña no encontrada');
+    }
+    return campaing;
+  }
+
   async createCampaingServices(createCampaingDto: CreateCampaingDto) {
     const userExisting = await this.userRepository.getUserByIdRepository(
       createCampaingDto.createdUserId,

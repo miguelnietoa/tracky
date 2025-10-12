@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, Param } from '@nestjs/common';
 import { CampaingService } from './campaing.service';
 import { CreateCampaingDto } from './Dtos/createCampaing.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -16,6 +16,11 @@ export class CampaingController {
   @Get('allCampaings')
   getAllCampaings() {
     return this.campaingService.getAllCampaingsServices();
+  }
+
+  @Get(':id')
+  getCampaingById(@Param('id') id: string) {
+    return this.campaingService.getCampaingByIdService(id);
   }
   @ApiBearerAuth()
   @UseGuards(AuthGuard)

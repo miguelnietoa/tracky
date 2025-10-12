@@ -31,6 +31,20 @@ export class CampaignService {
     }
   }
 
+  static async getCampaignById(id: string): Promise<{ data?: Campaign, error?: any }> {
+    try {
+      const response = await apiClient.get<Campaign>(`/campaing/${id}`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('Get campaign by ID error:', error)
+      return {
+        error: {
+          message: error.response?.data?.message || error.message || 'Failed to fetch campaign'
+        }
+      }
+    }
+  }
+
   static async approveCampaign(approvalData: ApproveCampaignDto) {
     try {
       const response = await apiClient.put('/campaing/approveCampaing', approvalData)
