@@ -66,6 +66,76 @@ export interface LoginResponse {
   }
 }
 
+// Campaign related types
+export interface CreateCampaignDto {
+  createdUserId: string
+  name: string
+  description: string
+  country: string
+  city: string
+  address: string
+  totalParticipants: number
+  goal: string
+  startDate: string
+  endDate: string
+  imageUrl: string
+}
+
+export interface ApproveCampaignDto {
+  campaingId: string
+  token: number
+}
+
+export interface JoinCampaignDto {
+  campaingId: string
+}
+
+export enum CampaignStatus {
+  CREATED = 'created',
+  ACTIVE = 'active',
+  INPROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  PENDING = 'pending',
+}
+
+export interface Campaign {
+  id: string
+  name: string
+  description: string
+  country: string
+  city: string
+  address: string
+  currentParticipants: number
+  totalParticipants: number
+  goal: string
+  startDate: string
+  endDate: string
+  imageUrl: string
+  token: number
+  campaignStatus: CampaignStatus
+  createAt: string
+  creator: {
+    id: string
+    name: string
+    lastName: string
+    email: string
+  }
+}
+
+export interface CampaignFormData {
+  name: string
+  description: string
+  country: string
+  city: string
+  address: string
+  totalParticipants: number
+  goal: string
+  startDate: string
+  endDate: string
+  imageUrl: string
+}
+
 // Form validation errors
 export interface FormErrors {
   [key: string]: string

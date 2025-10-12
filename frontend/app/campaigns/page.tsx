@@ -1,58 +1,74 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Filter, MapPin, Calendar, Users, Target } from "lucide-react"
+import { Plus, Search, Filter, MapPin, Calendar, Users, Target, Loader2, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-
-// Mock data for campaigns
-const campaigns = [
-  {
-    id: 1,
-    title: "Beach Cleanup Initiative",
-    description: "Community-driven beach cleanup to remove plastic waste and restore marine ecosystems.",
-    location: "Santa Monica, CA",
-    startDate: "2025-02-15",
-    endDate: "2025-02-16",
-    participants: 45,
-    goal: "Remove 500kg of plastic waste",
-    status: "active",
-    category: "cleanup",
-    impact: "2.3 tons CO2 saved",
-    tokens: 150,
-  },
-  {
-    id: 2,
-    title: "Urban Tree Planting",
-    description: "Plant native trees in urban areas to improve air quality and create green spaces.",
-    location: "Mexico City, Mexico",
-    startDate: "2025-03-01",
-    endDate: "2025-03-31",
-    participants: 128,
-    goal: "Plant 1000 native trees",
-    status: "active",
-    category: "reforestation",
-    impact: "15 tons CO2 absorbed",
-    tokens: 200,
-  },
-  {
-    id: 3,
-    title: "River Restoration Project",
-    description: "Restore polluted river ecosystem through community action and monitoring.",
-    location: "São Paulo, Brazil",
-    startDate: "2025-01-20",
-    endDate: "2025-04-20",
-    participants: 89,
-    goal: "Clean 5km of riverbank",
-    status: "completed",
-    category: "restoration",
-    impact: "Water quality improved 40%",
-    tokens: 300,
-  },
-]
+import { CampaignService } from "@/lib/campaign-service"
+import { Campaign, CampaignStatus } from "@/lib/types"
 
 export default function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchCampaigns = async () => {
+    try {
+      setLoading(true)
+      const response = await CampaignService.getAllCampaigns()
+
+      if (response.error) {
+        setError(response.error.message)
+      } else {
+        setCampaigns(response.data || [])
+      }
+    } catch (err) {
+      setError('Failed to fetch campaigns')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCampaigns()
+  }, [])
+
+  const getStatusBadgeVariant = (status: CampaignStatus) => {
+    switch (status) {
+      case CampaignStatus.ACTIVE:
+        return "default"
+      case CampaignStatus.COMPLETED:
+        return "secondary"
+      case CampaignStatus.CREATED:
+        return "outline"
+      default:
+        return "outline"
+    }
+  }
+
+  const getStatusText = (status: CampaignStatus) => {
+    switch (status) {
+      case CampaignStatus.CREATED:
+        return "Awaiting Approval"
+      case CampaignStatus.ACTIVE:
+        return "Active"
+      case CampaignStatus.COMPLETED:
+        return "Completed"
+      case CampaignStatus.CANCELLED:
+        return "Cancelled"
+      case CampaignStatus.PENDING:
+        return "Pending"
+      case CampaignStatus.INPROGRESS:
+        return "In Progress"
+      default:
+        return status
+    }
+  }
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -104,71 +120,108 @@ export default function CampaignsPage() {
           </Select>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-tracky-primary" />
+            <span className="ml-2 text-muted-foreground">Loading campaigns...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Alert className="mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Campaign Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {campaigns.map((campaign) => (
-            <Card
-              key={campaign.id}
-              className="border-border/50 bg-card/50 backdrop-blur hover:bg-card/80 transition-colors"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <Badge
-                    variant={
-                      campaign.status === "active"
-                        ? "default"
-                        : campaign.status === "completed"
-                          ? "secondary"
-                          : "outline"
-                    }
-                    className={campaign.status === "active" ? "bg-tracky-secondary text-white" : ""}
-                  >
-                    {campaign.status}
-                  </Badge>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-tracky-primary">{campaign.tokens} tokens</div>
-                    <div className="text-xs text-muted-foreground">reward</div>
+        {!loading && !error && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {campaigns.map((campaign) => (
+              <Card
+                key={campaign.id}
+                className="border-border/50 bg-card/50 backdrop-blur hover:bg-card/80 transition-colors"
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <Badge
+                      variant={getStatusBadgeVariant(campaign.campaignStatus)}
+                      className={campaign.campaignStatus === CampaignStatus.ACTIVE ? "bg-tracky-secondary text-white" : ""}
+                    >
+                      {getStatusText(campaign.campaignStatus)}
+                    </Badge>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-tracky-primary">{campaign.token} tokens</div>
+                      <div className="text-xs text-muted-foreground">reward</div>
+                    </div>
                   </div>
-                </div>
-                <CardTitle className="text-xl">{campaign.title}</CardTitle>
-                <CardDescription className="line-clamp-2">{campaign.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  {campaign.location}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {new Date(campaign.startDate).toLocaleDateString()} -{" "}
-                  {new Date(campaign.endDate).toLocaleDateString()}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Users className="h-4 w-4 mr-2" />
-                  {campaign.participants} participants
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Target className="h-4 w-4 mr-2" />
-                  {campaign.goal}
-                </div>
-                <div className="pt-2 border-t border-border/50">
-                  <div className="text-sm font-medium text-tracky-secondary mb-2">Impact Achieved</div>
-                  <div className="text-sm text-muted-foreground">{campaign.impact}</div>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Link href={`/campaigns/${campaign.id}`} className="flex-1">
-                    <Button variant="outline" className="w-full bg-transparent">
-                      View Details
-                    </Button>
-                  </Link>
-                  <Button className="flex-1 bg-tracky-primary hover:bg-tracky-primary/90 text-white">
-                    Join Campaign
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <CardTitle className="text-xl">{campaign.name}</CardTitle>
+                  <CardDescription className="line-clamp-2">{campaign.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    {campaign.city}, {campaign.country}
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {new Date(campaign.startDate).toLocaleDateString()} -{" "}
+                    {new Date(campaign.endDate).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 mr-2" />
+                    {campaign.currentParticipants}/{campaign.totalParticipants} participants
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Target className="h-4 w-4 mr-2" />
+                    {campaign.goal}
+                  </div>
+                  <div className="pt-2 border-t border-border/50">
+                    <div className="text-sm font-medium text-tracky-secondary mb-2">Created by</div>
+                    <div className="text-sm text-muted-foreground">{campaign.creator.name} {campaign.creator.lastName}</div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Link href={`/campaigns/${campaign.id}`} className="flex-1">
+                      <Button variant="outline" className="w-full bg-transparent">
+                        View Details
+                      </Button>
+                    </Link>
+                    {campaign.campaignStatus === CampaignStatus.ACTIVE ? (
+                      <Button className="flex-1 bg-tracky-primary hover:bg-tracky-primary/90 text-white">
+                        Join Campaign
+                      </Button>
+                    ) : campaign.campaignStatus === CampaignStatus.CREATED ? (
+                      <Button disabled className="flex-1" variant="outline">
+                        Awaiting Approval
+                      </Button>
+                    ) : (
+                      <Button disabled className="flex-1" variant="outline">
+                        {getStatusText(campaign.campaignStatus)}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && campaigns.length === 0 && (
+          <div className="text-center py-12">
+            <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No campaigns found</h3>
+            <p className="text-muted-foreground mb-4">Be the first to create an environmental campaign!</p>
+            <Link href="/campaigns/create">
+              <Button className="bg-tracky-primary hover:bg-tracky-primary/90 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Campaign
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Load More */}
         <div className="text-center mt-12">

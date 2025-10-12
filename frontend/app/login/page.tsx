@@ -11,7 +11,7 @@ import { Mail, Lock, Eye, Leaf, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from "@/lib/auth"
 import { AuthManager } from "@/lib/auth-manager"
-import { LoginFormData, FormErrors } from "@/lib/types"
+import { LoginFormData, FormErrors, LoginResponse } from "@/lib/types"
 import { validateEmail, validateLoginPassword } from "@/lib/validation"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -79,12 +79,37 @@ export default function LoginPage() {
           description: response.error.message || "Invalid email or password"
         })
       } else if (response.data) {
+        // The backend returns {access_token}, so we need to create a proper LoginResponse object
+        // For now, we'll decode the JWT token to get the user ID
+        let userId = 'temp-id'
+        try {
+          // Simple JWT decode to get the payload
+          const tokenParts = response.data.access_token.split('.')
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]))
+            userId = payload.uuid || payload.sub || 'temp-id'
+          }
+        } catch (error) {
+          console.warn('Could not decode JWT token:', error)
+        }
+
+        const loginResponse: LoginResponse = {
+          access_token: response.data.access_token,
+          user: {
+            id: userId,
+            name: loginForm.email.split('@')[0], // Temporary name from email
+            lastName: '',
+            email: loginForm.email,
+            wallet: ''
+          }
+        }
+
         // Store the token and user data using AuthManager
-        AuthManager.setAuth(response.data, loginForm.rememberMe)
+        AuthManager.setAuth(loginResponse, loginForm.rememberMe)
 
         toast({
           title: "Login Successful",
-          description: response.data.user ? `Welcome back, ${response.data.user.name}!` : "Login successful!"
+          description: `Welcome back, ${loginResponse.user?.name || 'User'}!`
         })
 
         // Redirect to dashboard or home page after successful login

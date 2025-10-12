@@ -1,35 +1,183 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Switch } from "@/components/ui/switch"
-import { CalendarIcon, MapPin, Target, Users, Leaf, ArrowLeft, Plus, X } from "lucide-react"
-import { format } from "date-fns"
+import { CalendarIcon, MapPin, Target, Users, Leaf, ArrowLeft, Loader2, AlertCircle, Plus, X } from "lucide-react"
 import Link from "next/link"
+import { CampaignService } from "@/lib/campaign-service"
+import { CampaignFormData, FormErrors, CreateCampaignDto, CampaignStatus } from "@/lib/types"
+import { AuthManager } from "@/lib/auth-manager"
+import {
+  validateCampaignName,
+  validateDescription,
+  validateCountry,
+  validateCity,
+  validateAddress,
+  validateTotalParticipants,
+  validateGoal,
+  validateDate,
+  validateDateRange,
+  validateImageUrl
+} from "@/lib/validation"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function CreateCampaignPage() {
+  const router = useRouter()
+  const { toast } = useToast()
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
-  const [impactMetrics, setImpactMetrics] = useState([{ id: 1, name: "Plastic Waste Removed", unit: "kg", target: "" }])
 
-  const addImpactMetric = () => {
-    setImpactMetrics([...impactMetrics, { id: Date.now(), name: "", unit: "", target: "" }])
+  const [formData, setFormData] = useState<CampaignFormData>({
+    name: '',
+    description: '',
+    country: '',
+    city: '',
+    address: '',
+    totalParticipants: 10,
+    goal: '',
+    startDate: '',
+    endDate: '',
+    imageUrl: ''
+  })
+
+  const [campaignStatus, setCampaignStatus] = useState<CampaignStatus | null>(null)
+
+  const updateFormData = (field: keyof CampaignFormData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
   }
 
-  const removeImpactMetric = (id: number) => {
-    setImpactMetrics(impactMetrics.filter((metric) => metric.id !== id))
+  const validateForm = (): FormErrors => {
+    const newErrors: FormErrors = {}
+
+    const nameError = validateCampaignName(formData.name)
+    if (nameError) newErrors.name = nameError
+
+    const descriptionError = validateDescription(formData.description)
+    if (descriptionError) newErrors.description = descriptionError
+
+    const countryError = validateCountry(formData.country)
+    if (countryError) newErrors.country = countryError
+
+    const cityError = validateCity(formData.city)
+    if (cityError) newErrors.city = cityError
+
+    const addressError = validateAddress(formData.address)
+    if (addressError) newErrors.address = addressError
+
+    const participantsError = validateTotalParticipants(formData.totalParticipants)
+    if (participantsError) newErrors.totalParticipants = participantsError
+
+    const goalError = validateGoal(formData.goal)
+    if (goalError) newErrors.goal = goalError
+
+    const startDateError = validateDate(formData.startDate, 'Start date')
+    if (startDateError) newErrors.startDate = startDateError
+
+    const endDateError = validateDate(formData.endDate, 'End date')
+    if (endDateError) newErrors.endDate = endDateError
+
+    const dateRangeError = validateDateRange(formData.startDate, formData.endDate)
+    if (dateRangeError) newErrors.dateRange = dateRangeError
+
+    const imageUrlError = validateImageUrl(formData.imageUrl)
+    if (imageUrlError) newErrors.imageUrl = imageUrlError
+
+    return newErrors
   }
 
-  const updateImpactMetric = (id: number, field: string, value: string) => {
-    setImpactMetrics(impactMetrics.map((metric) => (metric.id === id ? { ...metric, [field]: value } : metric)))
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Get current user
+    const currentUser = AuthManager.getUser()
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to create a campaign"
+      })
+      router.push('/login')
+      return
+    }
+
+    // Validate form
+    const formErrors = validateForm()
+    setErrors(formErrors)
+
+    if (Object.keys(formErrors).length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fix the errors in the form"
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const createCampaignData: CreateCampaignDto = {
+        createdUserId: currentUser.id,
+        name: formData.name,
+        description: formData.description,
+        country: formData.country,
+        city: formData.city,
+        address: formData.address,
+        totalParticipants: formData.totalParticipants,
+        goal: formData.goal,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        imageUrl: formData.imageUrl
+      }
+
+      const response = await CampaignService.createCampaign(createCampaignData)
+
+      if (response.error) {
+        toast({
+          variant: "destructive",
+          title: "Campaign Creation Failed",
+          description: response.error.message || "An error occurred while creating the campaign"
+        })
+      } else {
+        setCampaignStatus(CampaignStatus.CREATED)
+        toast({
+          title: "Campaign Created Successfully!",
+          description: "Your campaign has been created and is awaiting approval from an organizer."
+        })
+
+        // Redirect to campaigns page after a delay
+        setTimeout(() => {
+          router.push('/campaigns')
+        }, 3000)
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Campaign Creation Failed",
+        description: "An unexpected error occurred. Please try again."
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -110,7 +258,14 @@ export default function CreateCampaignPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Campaign Title</Label>
-                  <Input id="title" placeholder="e.g., Beach Cleanup Initiative" className="text-base" />
+                  <Input
+                    id="title"
+                    placeholder="e.g., Beach Cleanup Initiative"
+                    className={`text-base ${errors.name ? 'border-red-500' : ''}`}
+                    value={formData.name}
+                    onChange={(e) => updateFormData('name', e.target.value)}
+                  />
+                  {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -118,35 +273,76 @@ export default function CreateCampaignPage() {
                   <Textarea
                     id="description"
                     placeholder="Describe your campaign's purpose, activities, and expected outcomes..."
-                    className="min-h-32 text-base"
+                    className={`min-h-32 text-base ${errors.description ? 'border-red-500' : ''}`}
+                    value={formData.description}
+                    onChange={(e) => updateFormData('description', e.target.value)}
                   />
+                  {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cleanup">Cleanup</SelectItem>
-                        <SelectItem value="reforestation">Reforestation</SelectItem>
-                        <SelectItem value="restoration">Restoration</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="conservation">Conservation</SelectItem>
-                        <SelectItem value="renewable">Renewable Energy</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      placeholder="e.g., Brazil"
+                      className={`${errors.country ? 'border-red-500' : ''}`}
+                      value={formData.country}
+                      onChange={(e) => updateFormData('country', e.target.value)}
+                    />
+                    {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="location" placeholder="City, Country" className="pl-10" />
-                    </div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      placeholder="e.g., São Paulo"
+                      className={`${errors.city ? 'border-red-500' : ''}`}
+                      value={formData.city}
+                      onChange={(e) => updateFormData('city', e.target.value)}
+                    />
+                    {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="address"
+                      placeholder="e.g., Av. Paulista, 1578"
+                      className={`pl-10 ${errors.address ? 'border-red-500' : ''}`}
+                      value={formData.address}
+                      onChange={(e) => updateFormData('address', e.target.value)}
+                    />
+                  </div>
+                  {errors.address && <p className="text-sm text-red-500">{errors.address}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="goal">Campaign Goal</Label>
+                  <Textarea
+                    id="goal"
+                    placeholder="e.g., Reforestation of 1000 trees to restore local ecosystem"
+                    className={`min-h-20 ${errors.goal ? 'border-red-500' : ''}`}
+                    value={formData.goal}
+                    onChange={(e) => updateFormData('goal', e.target.value)}
+                  />
+                  {errors.goal && <p className="text-sm text-red-500">{errors.goal}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Campaign Image URL</Label>
+                  <Input
+                    id="imageUrl"
+                    placeholder="https://example.com/campaign-image.jpg"
+                    className={`${errors.imageUrl ? 'border-red-500' : ''}`}
+                    value={formData.imageUrl}
+                    onChange={(e) => updateFormData('imageUrl', e.target.value)}
+                  />
+                  {errors.imageUrl && <p className="text-sm text-red-500">{errors.imageUrl}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -160,86 +356,51 @@ export default function CreateCampaignPage() {
               <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? format(startDate, "PPP") : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
-                      </PopoverContent>
-                    </Popover>
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <div className="relative">
+                      <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="startDate"
+                        type="date"
+                        className={`pl-10 ${errors.startDate ? 'border-red-500' : ''}`}
+                        value={formData.startDate}
+                        onChange={(e) => {
+                          updateFormData('startDate', e.target.value)
+                          if (e.target.value) {
+                            setStartDate(new Date(e.target.value))
+                          }
+                        }}
+                      />
+                    </div>
+                    {errors.startDate && <p className="text-sm text-red-500">{errors.startDate}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label>End Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {endDate ? format(endDate, "PPP") : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
-                      </PopoverContent>
-                    </Popover>
+                    <Label htmlFor="endDate">End Date</Label>
+                    <div className="relative">
+                      <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="endDate"
+                        type="date"
+                        className={`pl-10 ${errors.endDate ? 'border-red-500' : ''}`}
+                        value={formData.endDate}
+                        onChange={(e) => {
+                          updateFormData('endDate', e.target.value)
+                          if (e.target.value) {
+                            setEndDate(new Date(e.target.value))
+                          }
+                        }}
+                      />
+                    </div>
+                    {errors.endDate && <p className="text-sm text-red-500">{errors.endDate}</p>}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Impact Metrics */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Impact Metrics</CardTitle>
-                    <CardDescription>Define measurable goals for your campaign's environmental impact</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={addImpactMetric}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Metric
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {impactMetrics.map((metric, index) => (
-                  <div key={metric.id} className="flex gap-4 items-end">
-                    <div className="flex-1 space-y-2">
-                      <Label>Metric Name</Label>
-                      <Input
-                        placeholder="e.g., Plastic Waste Removed"
-                        value={metric.name}
-                        onChange={(e) => updateImpactMetric(metric.id, "name", e.target.value)}
-                      />
-                    </div>
-                    <div className="w-24 space-y-2">
-                      <Label>Unit</Label>
-                      <Input
-                        placeholder="kg"
-                        value={metric.unit}
-                        onChange={(e) => updateImpactMetric(metric.id, "unit", e.target.value)}
-                      />
-                    </div>
-                    <div className="w-32 space-y-2">
-                      <Label>Target</Label>
-                      <Input
-                        placeholder="500"
-                        value={metric.target}
-                        onChange={(e) => updateImpactMetric(metric.id, "target", e.target.value)}
-                      />
-                    </div>
-                    {impactMetrics.length > 1 && (
-                      <Button variant="ghost" size="sm" onClick={() => removeImpactMetric(metric.id)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                {errors.dateRange && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errors.dateRange}</AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
 
@@ -254,29 +415,16 @@ export default function CreateCampaignPage() {
                   <Label htmlFor="maxParticipants">Maximum Participants</Label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="maxParticipants" type="number" placeholder="100" className="pl-10" />
+                    <Input
+                      id="maxParticipants"
+                      type="number"
+                      placeholder="100"
+                      className={`pl-10 ${errors.totalParticipants ? 'border-red-500' : ''}`}
+                      value={formData.totalParticipants}
+                      onChange={(e) => updateFormData('totalParticipants', parseInt(e.target.value) || 0)}
+                    />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tokenReward">Token Reward per Participant</Label>
-                  <Input id="tokenReward" type="number" placeholder="150" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Require Application</Label>
-                    <p className="text-sm text-muted-foreground">Volunteers must apply and be approved to join</p>
-                  </div>
-                  <Switch />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Enable Real-time Tracking</Label>
-                    <p className="text-sm text-muted-foreground">Track volunteer actions on the blockchain</p>
-                  </div>
-                  <Switch defaultChecked />
+                  {errors.totalParticipants && <p className="text-sm text-red-500">{errors.totalParticipants}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -334,18 +482,37 @@ export default function CreateCampaignPage() {
               </CardContent>
             </Card>
 
+            {/* Status Display */}
+            {campaignStatus === CampaignStatus.CREATED && (
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Campaign created successfully! It's now awaiting approval from an organizer. Once approved, users will be able to join your campaign.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Actions */}
             <div className="space-y-3">
-              <Button className="w-full bg-tracky-primary hover:bg-tracky-primary/90 text-white">
-                Create Campaign
-              </Button>
-              <Button variant="outline" className="w-full bg-transparent">
-                Save as Draft
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full bg-tracky-primary hover:bg-tracky-primary/90 text-white"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Campaign...
+                  </>
+                ) : (
+                  'Create Campaign'
+                )}
               </Button>
             </div>
           </div>
         </div>
       </div>
+      <Toaster />
     </div>
   )
 }

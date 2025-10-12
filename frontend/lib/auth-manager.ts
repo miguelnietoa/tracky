@@ -25,6 +25,11 @@ export class AuthManager {
     }
   }
 
+  // Alias for getCurrentUser (used in campaign creation)
+  static getCurrentUser(): LoginResponse['user'] | null {
+    return this.getUser()
+  }
+
   // Check if user is authenticated
   static isAuthenticated(): boolean {
     return !!this.getToken()
