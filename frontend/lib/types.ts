@@ -30,29 +30,20 @@ export interface IndividualFormData {
   newsletter: boolean
 }
 
-export interface OrganizationFormData {
-  orgName: string
-  contactName: string
-  orgEmail: string
-  orgPassword: string
+
+
+export interface OrganizerFormData {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
   confirmPassword: string
   wallet: string
   terms: boolean
   newsletter: boolean
 }
 
-export interface CommunityFormData {
-  communityName: string
-  leaderName: string
-  communityEmail: string
-  communityPassword: string
-  confirmPassword: string
-  wallet: string
-  terms: boolean
-  newsletter: boolean
-}
-
-export type RegistrationFormData = IndividualFormData | OrganizationFormData | CommunityFormData
+export type RegistrationFormData = IndividualFormData | OrganizerFormData
 
 // API Response types
 export interface CreateUserResponse {

@@ -8,13 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Leaf, Mail, Lock, Eye, User, Building2, Users, Loader2 } from "lucide-react"
+import { Leaf, Mail, Lock, Eye, User, Loader2, Shield } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from "@/lib/auth"
 import {
   IndividualFormData,
-  OrganizationFormData,
-  CommunityFormData,
+  OrganizerFormData,
   FormErrors,
   CreateUserDto
 } from "@/lib/types"
@@ -48,22 +47,11 @@ export default function GetStartedPage() {
     newsletter: false
   })
 
-  const [organizationForm, setOrganizationForm] = useState<OrganizationFormData>({
-    orgName: '',
-    contactName: '',
-    orgEmail: '',
-    orgPassword: '',
-    confirmPassword: '',
-    wallet: '',
-    terms: false,
-    newsletter: false
-  })
-
-  const [communityForm, setCommunityForm] = useState<CommunityFormData>({
-    communityName: '',
-    leaderName: '',
-    communityEmail: '',
-    communityPassword: '',
+  const [organizerForm, setOrganizerForm] = useState<OrganizerFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
     confirmPassword: '',
     wallet: '',
     terms: false,
@@ -80,8 +68,8 @@ export default function GetStartedPage() {
   const validateForm = (formData: any, formType: string): FormErrors => {
     const formErrors: FormErrors = {}
 
-    if (formType === 'individual') {
-      // Individual form validation
+    if (formType === 'individual' || formType === 'organizer') {
+      // Individual and Organizer form validation (both have same structure)
       const nameError = validateName(formData.firstName, 'First name')
       if (nameError) formErrors.firstName = nameError
 
@@ -101,81 +89,20 @@ export default function GetStartedPage() {
       if (confirmPasswordError) formErrors.confirmPassword = confirmPasswordError
 
       if (!formData.terms) formErrors.terms = 'You must accept the terms of service'
-    } else if (formType === 'organization') {
-      // Organization form validation
-      const orgNameError = validateRequiredField(formData.orgName, 'Organization name')
-      if (orgNameError) formErrors.orgName = orgNameError
-
-      const contactNameError = validateName(formData.contactName, 'Contact name')
-      if (contactNameError) formErrors.contactName = contactNameError
-
-      const emailError = validateEmail(formData.orgEmail)
-      if (emailError) formErrors.orgEmail = emailError
-
-      const walletError = validateWallet(formData.wallet)
-      if (walletError) formErrors.wallet = walletError
-
-      const passwordError = validatePassword(formData.orgPassword)
-      if (passwordError) formErrors.orgPassword = passwordError
-
-      const confirmPasswordError = validateConfirmPassword(formData.orgPassword, formData.confirmPassword)
-      if (confirmPasswordError) formErrors.confirmPassword = confirmPasswordError
-
-      if (!formData.terms) formErrors.terms = 'You must accept the terms of service'
-    } else if (formType === 'community') {
-      // Community form validation
-      const communityNameError = validateRequiredField(formData.communityName, 'Community name')
-      if (communityNameError) formErrors.communityName = communityNameError
-
-      const leaderNameError = validateName(formData.leaderName, 'Leader name')
-      if (leaderNameError) formErrors.leaderName = leaderNameError
-
-      const emailError = validateEmail(formData.communityEmail)
-      if (emailError) formErrors.communityEmail = emailError
-
-      const walletError = validateWallet(formData.wallet)
-      if (walletError) formErrors.wallet = walletError
-
-      const passwordError = validatePassword(formData.communityPassword)
-      if (passwordError) formErrors.communityPassword = passwordError
-
-      const confirmPasswordError = validateConfirmPassword(formData.communityPassword, formData.confirmPassword)
-      if (confirmPasswordError) formErrors.confirmPassword = confirmPasswordError
-
-      if (!formData.terms) formErrors.terms = 'You must accept the terms of service'
     }
 
     return formErrors
   }
 
   const mapFormDataToCreateUserDto = (formData: any, formType: string): CreateUserDto => {
-    if (formType === 'individual') {
-      return {
-        name: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        wallet: formData.wallet,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword
-      }
-    } else if (formType === 'organization') {
-      return {
-        name: formData.contactName.split(' ')[0] || formData.contactName,
-        lastName: formData.contactName.split(' ').slice(1).join(' ') || formData.orgName,
-        email: formData.orgEmail,
-        wallet: formData.wallet,
-        password: formData.orgPassword,
-        confirmPassword: formData.confirmPassword
-      }
-    } else { // community
-      return {
-        name: formData.leaderName.split(' ')[0] || formData.leaderName,
-        lastName: formData.leaderName.split(' ').slice(1).join(' ') || formData.communityName,
-        email: formData.communityEmail,
-        wallet: formData.wallet,
-        password: formData.communityPassword,
-        confirmPassword: formData.confirmPassword
-      }
+    // Both individual and organizer have the same structure
+    return {
+      name: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      wallet: formData.wallet,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword
     }
   }
 
@@ -188,12 +115,9 @@ export default function GetStartedPage() {
     if (activeTab === 'individual') {
       currentForm = individualForm
       formType = 'individual'
-    } else if (activeTab === 'organization') {
-      currentForm = organizationForm
-      formType = 'organization'
     } else {
-      currentForm = communityForm
-      formType = 'community'
+      currentForm = organizerForm
+      formType = 'organizer'
     }
 
     // Validate form
@@ -265,18 +189,14 @@ export default function GetStartedPage() {
           <CardContent>
             <form onSubmit={handleSubmit}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="individual" className="text-xs">
                     <User className="h-4 w-4 mr-1" />
                     Individual
                   </TabsTrigger>
-                  <TabsTrigger value="organization" className="text-xs">
-                    <Building2 className="h-4 w-4 mr-1" />
-                    Organization
-                  </TabsTrigger>
-                  <TabsTrigger value="community" className="text-xs">
-                    <Users className="h-4 w-4 mr-1" />
-                    Community
+                  <TabsTrigger value="organizer" className="text-xs">
+                    <Shield className="h-4 w-4 mr-1" />
+                    Organizer
                   </TabsTrigger>
                 </TabsList>
 
@@ -447,116 +367,116 @@ export default function GetStartedPage() {
                 </Button>
               </TabsContent>
 
-              <TabsContent value="organization" className="space-y-4 mt-6">
+              <TabsContent value="organizer" className="space-y-4 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="orgName">Organization Name</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="orgName"
-                      type="text"
-                      placeholder="Enter organization name"
-                      className={`pl-10 ${errors.orgName ? 'border-red-500' : ''}`}
-                      value={organizationForm.orgName}
-                      onChange={(e) => setOrganizationForm({...organizationForm, orgName: e.target.value})}
-                    />
-                  </div>
-                  {errors.orgName && <p className="text-sm text-red-500">{errors.orgName}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contactName">Contact Name</Label>
+                  <Label htmlFor="organizerFirstName">First Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="contactName"
+                      id="organizerFirstName"
                       type="text"
-                      placeholder="Enter contact person name"
-                      className={`pl-10 ${errors.contactName ? 'border-red-500' : ''}`}
-                      value={organizationForm.contactName}
-                      onChange={(e) => setOrganizationForm({...organizationForm, contactName: e.target.value})}
+                      placeholder="Enter your first name"
+                      className={`pl-10 ${errors.firstName ? 'border-red-500' : ''}`}
+                      value={organizerForm.firstName}
+                      onChange={(e) => setOrganizerForm({...organizerForm, firstName: e.target.value})}
                     />
                   </div>
-                  {errors.contactName && <p className="text-sm text-red-500">{errors.contactName}</p>}
+                  {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="orgEmail">Organization Email</Label>
+                  <Label htmlFor="organizerLastName">Last Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="organizerLastName"
+                      type="text"
+                      placeholder="Enter your last name"
+                      className={`pl-10 ${errors.lastName ? 'border-red-500' : ''}`}
+                      value={organizerForm.lastName}
+                      onChange={(e) => setOrganizerForm({...organizerForm, lastName: e.target.value})}
+                    />
+                  </div>
+                  {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="organizerEmail">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="orgEmail"
+                      id="organizerEmail"
                       type="email"
-                      placeholder="Enter organization email"
-                      className={`pl-10 ${errors.orgEmail ? 'border-red-500' : ''}`}
-                      value={organizationForm.orgEmail}
-                      onChange={(e) => setOrganizationForm({...organizationForm, orgEmail: e.target.value})}
+                      placeholder="Enter your organizer email"
+                      className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                      value={organizerForm.email}
+                      onChange={(e) => setOrganizerForm({...organizerForm, email: e.target.value})}
                     />
                   </div>
-                  {errors.orgEmail && <p className="text-sm text-red-500">{errors.orgEmail}</p>}
+                  {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="orgWallet">Wallet Address</Label>
+                  <Label htmlFor="organizerWallet">Wallet Address</Label>
                   <div className="relative">
                     <div className="absolute left-3 top-3 h-4 w-4 text-muted-foreground font-mono text-xs">
                       0x
                     </div>
                     <Input
-                      id="orgWallet"
+                      id="organizerWallet"
                       type="text"
-                      placeholder="Enter organization's Ethereum wallet address"
+                      placeholder="Enter your Ethereum wallet address"
                       className={`pl-8 ${errors.wallet ? 'border-red-500' : ''}`}
-                      value={organizationForm.wallet}
-                      onChange={(e) => setOrganizationForm({...organizationForm, wallet: e.target.value})}
+                      value={organizerForm.wallet}
+                      onChange={(e) => setOrganizerForm({...organizerForm, wallet: e.target.value})}
                     />
                   </div>
                   {errors.wallet && <p className="text-sm text-red-500">{errors.wallet}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="orgPassword">Password</Label>
+                  <Label htmlFor="organizerPassword">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="orgPassword"
-                      type={showPassword.orgPassword ? "text" : "password"}
+                      id="organizerPassword"
+                      type={showPassword.organizerPassword ? "text" : "password"}
                       placeholder="Create a password"
-                      className={`pl-10 pr-10 ${errors.orgPassword ? 'border-red-500' : ''}`}
-                      value={organizationForm.orgPassword}
-                      onChange={(e) => setOrganizationForm({...organizationForm, orgPassword: e.target.value})}
+                      className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                      value={organizerForm.password}
+                      onChange={(e) => setOrganizerForm({...organizerForm, password: e.target.value})}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => togglePasswordVisibility('orgPassword')}
+                      onClick={() => togglePasswordVisibility('organizerPassword')}
                     >
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </div>
-                  {errors.orgPassword && <p className="text-sm text-red-500">{errors.orgPassword}</p>}
+                  {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="orgConfirmPassword">Confirm Password</Label>
+                  <Label htmlFor="organizerConfirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="orgConfirmPassword"
-                      type={showPassword.orgConfirmPassword ? "text" : "password"}
+                      id="organizerConfirmPassword"
+                      type={showPassword.organizerConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
                       className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                      value={organizationForm.confirmPassword}
-                      onChange={(e) => setOrganizationForm({...organizationForm, confirmPassword: e.target.value})}
+                      value={organizerForm.confirmPassword}
+                      onChange={(e) => setOrganizerForm({...organizerForm, confirmPassword: e.target.value})}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => togglePasswordVisibility('orgConfirmPassword')}
+                      onClick={() => togglePasswordVisibility('organizerConfirmPassword')}
                     >
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </Button>
@@ -567,12 +487,12 @@ export default function GetStartedPage() {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="terms"
+                    id="organizerTerms"
                     className={`h-4 w-4 rounded border-gray-300 ${errors.terms ? 'border-red-500' : ''}`}
-                    checked={organizationForm.terms}
-                    onChange={(e) => setOrganizationForm({...organizationForm, terms: e.target.checked})}
+                    checked={organizerForm.terms}
+                    onChange={(e) => setOrganizerForm({...organizerForm, terms: e.target.checked})}
                   />
-                  <Label htmlFor="terms" className="text-sm text-muted-foreground">
+                  <Label htmlFor="organizerTerms" className="text-sm text-muted-foreground">
                     I agree to the{" "}
                     <Link href="/terms" className="text-tracky-primary hover:underline">
                       Terms of Service
@@ -588,12 +508,12 @@ export default function GetStartedPage() {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="newsletter"
+                    id="organizerNewsletter"
                     className="h-4 w-4 rounded border-gray-300"
-                    checked={organizationForm.newsletter}
-                    onChange={(e) => setOrganizationForm({...organizationForm, newsletter: e.target.checked})}
+                    checked={organizerForm.newsletter}
+                    onChange={(e) => setOrganizerForm({...organizerForm, newsletter: e.target.checked})}
                   />
-                  <Label htmlFor="newsletter" className="text-sm text-muted-foreground">
+                  <Label htmlFor="organizerNewsletter" className="text-sm text-muted-foreground">
                     Subscribe to our newsletter for environmental impact updates
                   </Label>
                 </div>
@@ -606,180 +526,15 @@ export default function GetStartedPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
+                      Creating Organizer Account...
                     </>
                   ) : (
-                    'Create Account'
+                    'Create Organizer Account'
                   )}
                 </Button>
               </TabsContent>
 
-              <TabsContent value="community" className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="communityName">Community Name</Label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="communityName"
-                      type="text"
-                      placeholder="Enter community name"
-                      className={`pl-10 ${errors.communityName ? 'border-red-500' : ''}`}
-                      value={communityForm.communityName}
-                      onChange={(e) => setCommunityForm({...communityForm, communityName: e.target.value})}
-                    />
-                  </div>
-                  {errors.communityName && <p className="text-sm text-red-500">{errors.communityName}</p>}
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="leaderName">Community Leader</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="leaderName"
-                      type="text"
-                      placeholder="Enter leader name"
-                      className={`pl-10 ${errors.leaderName ? 'border-red-500' : ''}`}
-                      value={communityForm.leaderName}
-                      onChange={(e) => setCommunityForm({...communityForm, leaderName: e.target.value})}
-                    />
-                  </div>
-                  {errors.leaderName && <p className="text-sm text-red-500">{errors.leaderName}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="communityEmail">Community Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="communityEmail"
-                      type="email"
-                      placeholder="Enter community email"
-                      className={`pl-10 ${errors.communityEmail ? 'border-red-500' : ''}`}
-                      value={communityForm.communityEmail}
-                      onChange={(e) => setCommunityForm({...communityForm, communityEmail: e.target.value})}
-                    />
-                  </div>
-                  {errors.communityEmail && <p className="text-sm text-red-500">{errors.communityEmail}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="communityWallet">Wallet Address</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-3 h-4 w-4 text-muted-foreground font-mono text-xs">
-                      0x
-                    </div>
-                    <Input
-                      id="communityWallet"
-                      type="text"
-                      placeholder="Enter community's Ethereum wallet address"
-                      className={`pl-8 ${errors.wallet ? 'border-red-500' : ''}`}
-                      value={communityForm.wallet}
-                      onChange={(e) => setCommunityForm({...communityForm, wallet: e.target.value})}
-                    />
-                  </div>
-                  {errors.wallet && <p className="text-sm text-red-500">{errors.wallet}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="communityPassword">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="communityPassword"
-                      type={showPassword.communityPassword ? "text" : "password"}
-                      placeholder="Create a password"
-                      className={`pl-10 pr-10 ${errors.communityPassword ? 'border-red-500' : ''}`}
-                      value={communityForm.communityPassword}
-                      onChange={(e) => setCommunityForm({...communityForm, communityPassword: e.target.value})}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => togglePasswordVisibility('communityPassword')}
-                    >
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  {errors.communityPassword && <p className="text-sm text-red-500">{errors.communityPassword}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="communityConfirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="communityConfirmPassword"
-                      type={showPassword.communityConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
-                      className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                      value={communityForm.confirmPassword}
-                      onChange={(e) => setCommunityForm({...communityForm, confirmPassword: e.target.value})}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => togglePasswordVisibility('communityConfirmPassword')}
-                    >
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    className={`h-4 w-4 rounded border-gray-300 ${errors.terms ? 'border-red-500' : ''}`}
-                    checked={communityForm.terms}
-                    onChange={(e) => setCommunityForm({...communityForm, terms: e.target.checked})}
-                  />
-                  <Label htmlFor="terms" className="text-sm text-muted-foreground">
-                    I agree to the{" "}
-                    <Link href="/terms" className="text-tracky-primary hover:underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="text-tracky-primary hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
-                {errors.terms && <p className="text-sm text-red-500">{errors.terms}</p>}
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="newsletter"
-                    className="h-4 w-4 rounded border-gray-300"
-                    checked={communityForm.newsletter}
-                    onChange={(e) => setCommunityForm({...communityForm, newsletter: e.target.checked})}
-                  />
-                  <Label htmlFor="newsletter" className="text-sm text-muted-foreground">
-                    Subscribe to our newsletter for environmental impact updates
-                  </Label>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-tracky-primary hover:bg-tracky-primary/90"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Create Account'
-                  )}
-                </Button>
-              </TabsContent>
 
 
               </Tabs>

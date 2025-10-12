@@ -90,7 +90,7 @@ export default function LoginPage() {
         // Redirect to dashboard or home page after successful login
         setTimeout(() => {
           router.push('/tracking') // or wherever you want to redirect after login
-        }, 1500)
+        }, 1000)
       }
     } catch (error) {
       toast({
